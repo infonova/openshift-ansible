@@ -319,9 +319,9 @@ resources:
     type: OS::Cinder::Volume
     properties:
       size: { get_param: volume_size }
-      {% if openshift_openstack_cinder_volume_type is defined %}
-      type: {{ openshift_openstack_cinder_volume_type }}
-      {% endif %}
+{% if openshift_openstack_cinder_volume_type is defined %}
+      volume_type: {{ openshift_openstack_cinder_volume_type }}
+{% endif %}
       availability_zone: { get_param: availability_zone }
       metadata:
         purpose: openshift_docker_storage
