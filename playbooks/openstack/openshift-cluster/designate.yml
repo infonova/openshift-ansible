@@ -1,0 +1,29 @@
+---
+- name: Get and print instance IP
+  hosts: localhost
+  gather_facts: False
+  tasks:
+  - name: Get VM infos
+    os_server_facts:
+      server: "*.{{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}"
+
+  - name: Update internal records of openshift hosts
+    local_action: command openstack recordset set {{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}. {{ item.name }}.  --record {{ item.private_v4 }}
+    loop: "{{ openstack_servers }}"
+
+  - name: Update record of API / UI Public IP
+    local_action: command openstack recordset set {{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}. console.{{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}.  --record {{ openshift_openstack_public_api_ip }}
+    when:
+    - openshift_openstack_public_api_ip is defined
+
+  - name: Update record of OpenShift Router Public IP
+    local_action: command openstack recordset set {{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}. *.apps.{{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}.  --record {{ openshift_openstack_public_router_ip }}
+    when: openshift_openstack_public_router_ip is defined
+
+#  - os_recordset:
+#      state: present
+#      zone: openshift.betech.cloud.
+#      name: '{{ item.name.split(".")[0] }}'
+#      recordset_type: "A"
+#      records: ['{{ item.addresses["openshift-ansible-openshift.betech.cloud-net"][0].addr }}']
+#    loop: "{{ openstack_servers }}"
