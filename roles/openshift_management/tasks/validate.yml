@@ -49,7 +49,7 @@
 - name: Validate Cloud Provider storage class
   assert:
     that:
-      - openshift_cloudprovider_kind in ['aws','azure','gce']
+      - openshift_cloudprovider_kind in ['aws','azure','gce','openstack']
     msg: |
       openshift_management_storage_class is 'cloudprovider' but you have an
       invalid kind defined, '{{ openshift_cloudprovider_kind }}'. See
