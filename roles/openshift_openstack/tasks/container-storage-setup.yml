@@ -33,6 +33,7 @@
         mode: 0644
 
   # TODO(shadower): Find out which CentOS version supports overlayfs2
+  # msommer: pin to overlay2
   when:
     - ansible_distribution == "CentOS"
 
