@@ -213,7 +213,12 @@ resources:
     properties:
       name:      { get_param: name }
       key_name:  { get_param: key_name }
-      image:     { get_param: image }
+      #image:     { get_param: image }
+      block_device_mapping_v2:
+      - device_name: vda
+        delete_on_termination: true
+        image:  { get_param: image }
+        volume_size: 20
       flavor:    { get_param: flavor }
       networks:
 {% if openshift_use_flannel|default(False)|bool %}
