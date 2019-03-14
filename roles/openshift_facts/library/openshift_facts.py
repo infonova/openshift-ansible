@@ -304,7 +304,7 @@ def normalize_openstack_facts(metadata, facts):
         if metadata['ec2_compat'][ip_var] == []:
             metadata_ip_var = ""
         else:
-            metadata_ip_var = metadata['ec2_compat'][ip_var].split(',')[0]
+            metadata_ip_var = metadata['ec2_compat'][ip_var]
         try:
             if socket.gethostbyname(metadata['ec2_compat'][h_var]) == metadata_ip_var:
                 facts['network'][f_var] = metadata['ec2_compat'][h_var]
