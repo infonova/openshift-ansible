@@ -1,0 +1,106 @@
+---
+- name: Deploy the DNS servers
+  hosts: localhost
+  connection: local
+  become: no
+  gather_facts: no
+  vars:
+    stack_name: dns-service
+    domain_name: "{{ openshift_openstack_clusterid}}.{{ openshift_openstack_public_dns_domain }}"
+    flavor: "{{ openshift_openstack_dns_flavor }}"
+    image: "{{ openshift_openstack_dns_image_name }}"
+    slave_count: 1
+    external_network: "{{ openshift_openstack_external_network_name }}"
+    ssh_user: "root"
+    slave_server_group_policies: ['anti-affinity']
+    dns_forwarders: "{{ openshift_openstack_dns_forwarders }}" 
+    update_key: "{{ openshift_openstack_external_nsupdate_keys['private']['key_secret'] }}"
+    contact: admin@{{ domain_name }}
+  tasks:
+
+  - name: Check whether the stack exists already
+    command: "openstack stack show {{ stack_name }}"
+    ignore_errors: yes
+    register: stack_check
+
+  - name: Create the Heat Stack
+    os_stack:
+      name: "{{ stack_name }}"
+      template: heat/dns_service.yaml
+      parameters:
+        domain_name: "{{ domain_name }}"
+        external_network: "{{ external_network }}"
+        ssh_key_name: "{{ openshift_openstack_keypair_name }}"
+        dns_forwarders: "{{ dns_forwarders }}"
+        image: "{{ image }}"
+        flavor: "{{ flavor }}"
+        slave_count: "{{ slave_count }}"
+        slave_server_group_policies: "{{ slave_server_group_policies }}"
+        service_network: "{{ openshift_openstack_provider_network_name }}"
+        service_subnet: "{{ openshift_openstack_node_subnet_name }}"
+        master_ip: "{{ openshift_openstack_dns_master_ip }}" 
+        slave_ip: "{{ openshift_openstack_dns_slave_ip }}"
+    register: stack_output
+    when: stack_check.rc != 0
+
+  - name: Register stack output
+    command: >
+      openstack stack output show -f value -c output_value
+      {{ stack_name }} ip_address
+    register: stack_output_raw
+
+  - set_fact:
+      # Need "safe" to create an Ansible safe dictionary object.
+      stack_output: "{{ stack_output_raw.stdout|safe }}"
+
+  - name: Add the master to the inventory
+    add_host:
+      name: "{{ stack_output.master.address }}"
+      groups: masters,bind
+      zone: "{{ domain_name }}"
+      domain_name: "{{ domain_name }}"
+      masters: [" {{ stack_output.master.name }} "]
+      forwarders: "{{ dns_forwarders }}"
+      contact: "{{ contact }}"
+      nameservers: "{{ [stack_output.master] + stack_output.slaves }}"
+      ansible_user: "{{ ssh_user }}"
+
+  - name: Add the slaves to the inventory
+    add_host:
+      name: "{{ item.address }}"
+      groups: slaves,bind
+      zone: "{{ domain_name }}"
+      domain_name: "{{ domain_name }}"
+      masters: ["{{ stack_output.master.name }}"]
+      forwarders: "{{ dns_forwarders }}"
+      contact: "{{ contact }}"
+      nameservers: "{{ [stack_output.master] + stack_output.slaves }}"
+      ansible_user: "{{ ssh_user }}"
+    with_items: "{{ stack_output.slaves }}"
+
+
+  - name: Wait for the deployed servers
+    wait_for:
+      host: "{{ item }}"
+      port: 22
+    with_items: "{{ groups['all'] }}"
+
+  - name: Verify the servers can be SSHd into
+    wait_for_connection:
+       with_items: "{{ groups['all'] }}"
+
+- include: ansible/bind-server.yml
+
+# Hack to change the DHCP DNS to the new DNS after their creation
+- name: Update Subnet DNS 
+  hosts: localhost
+  tasks: 
+  - name: Update Subnet DNS
+    os_subnet:
+      name: "{{ openshift_openstack_node_subnet_name }}"
+      network_name: "{{ openshift_openstack_provider_network_name }}"
+      cidr: "{{ openshift_openstack_subnet_cidr  }}"
+      dns_nameservers:
+       - 192.168.0.27
+       - 192.168.0.4
+

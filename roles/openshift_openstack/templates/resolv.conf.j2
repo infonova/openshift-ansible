@@ -1,0 +1,4 @@
+search cluster.local openstacklocal openshift.betech.cloud
+{% for nameserver in openshift_openstack_dns_nameservers %}
+nameserver {{ nameserver }}
+{% endfor %}
