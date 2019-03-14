@@ -101,6 +101,6 @@
       network_name: "{{ openshift_openstack_provider_network_name }}"
       cidr: "{{ openshift_openstack_subnet_cidr  }}"
       dns_nameservers:
-       - 192.168.0.27
-       - 192.168.0.4
+       - "{{ openshift_openstack_dns_master_ip }}"
+       - "{{ openshift_openstack_dns_slave_ip }}"
 
