@@ -61,12 +61,10 @@ parameters:
     label: Net name
     description: Net name
 
-{% if not openshift_openstack_provider_network_name %}
   subnet:
     type: string
     label: Subnet ID
     description: Subnet resource
-{% endif %}
 
 {% if openshift_use_kuryr|default(false)|bool %}
   pod_net:
