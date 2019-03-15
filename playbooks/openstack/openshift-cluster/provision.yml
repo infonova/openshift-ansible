@@ -22,16 +22,6 @@
   - name: Gather facts for the new nodes
     setup:
 
-- name: Change resolv.conf to internal DNS
-  hosts: oo_all_hosts
-  become: yes
-  tasks:
-  - name: Copy resolv.conf template
-    template: roles/openshift_openstack/templates/resolv.conf.j2
-    dest: /etc/esolv.conf
-  when: openshift_openstack_dns_nameservers | length > 0
-
-
 # TODO(shadower): consider splitting this up so people can stop here
 # and configure their DNS if they have to.
 - name: Populate the DNS entries
@@ -47,7 +37,7 @@
     when:
     - openshift_openstack_external_nsupdate_keys is defined
     - openshift_openstack_external_nsupdate_keys.private is defined or openshift_openstack_external_nsupdate_keys.public is defined
-
+    delegate_to: "{{ openshift_openstack_bastion_ip }}"
 
 - import_playbook: ../../init/basic_facts.yml
 

@@ -1,0 +1,78 @@
+---
+- name: Deploy the Bastion Server
+  hosts: localhost
+  connection: local
+  become: no
+  gather_facts: no
+
+  tasks:
+
+  - name: Create OS Network
+    os_network:
+      name: "{{ openshift_openstack_provider_network_name }}"
+    
+  - name: Create OS Subnet
+    os_subnet:
+      network_name: "{{ openshift_openstack_provider_network_name }}"
+      name: "{{ openshift_openstack_node_subnet_name }}"
+      cidr: "{{ openshift_openstack_subnet_cidr }}"
+      dns_nameservers:
+         "{{ openshift_openstack_dns_forwarders }}"
+
+  - name: Create OS Router
+    ignore_errors: yes
+    os_router:
+      name: os-router
+      network: "{{ openshift_openstack_external_network_name }}"
+      interfaces: "{{ openshift_openstack_node_subnet_name }}"
+
+  - name: Create fixed IP Port for bastion
+    os_port:
+      name: bastion-port
+      network: "{{ openshift_openstack_provider_network_name }}"
+      fixed_ips:
+        - ip_address: "{{ openshift_openstack_bastion_ip }}"
+    register: bastion_port
+
+  - name: Create bastion host
+    os_server:
+       name: "bastion"
+       image: "{{ openshift_openstack_bastion_image_name }}"
+       key_name: "{{ openshift_openstack_keypair_name }}"
+       flavor: "{{ openshift_openstack_bastion_flavor }}"
+       nics: 
+          - port-id: "{{ bastion_port.id }}"
+       floating_ips:
+          - "{{ openshift_openstack_bastion_floating_ip }}"
+       userdata: |
+           #cloud-config
+           system_info:
+              default_user:
+                name: {{ openshift_openstack_user }}
+                sudo: ["ALL=(ALL) NOPASSWD: ALL"]
+
+    
+
+  - name: Add bastion host to inventory
+    add_host:
+       name: "{{ openshift_openstack_bastion_floating_ip }}"
+       groups: bastion-host
+
+
+- name: Configure the Bastion Server
+  hosts: bastion-host
+  gather_facts: no
+  become: yes
+
+  tasks:
+
+  - name: Wait for bastion host
+    wait_for_connection:
+      timeout: 900
+
+  - name: install python DNS package 
+    package: 
+       name: python-dns 
+       state: installed 
+
+
