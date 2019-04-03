@@ -11,7 +11,7 @@
     image: "{{ openshift_openstack_dns_image_name }}"
     slave_count: 1
     external_network: "{{ openshift_openstack_external_network_name }}"
-    ssh_user: "root"
+    ssh_user: "cloud" # todo: varible?
     slave_server_group_policies: ['anti-affinity']
     dns_forwarders: "{{ openshift_openstack_dns_forwarders }}" 
     update_key: "{{ openshift_openstack_external_nsupdate_keys['private']['key_secret'] }}"
@@ -89,6 +89,7 @@
   - name: Verify the servers can be SSHd into
     wait_for_connection:
        with_items: "{{ groups['all'] }}"
+       delegate_to: "{{ openshift_openstack_bastion_ip }}"
 
 - include: ansible/bind-server.yml
 
