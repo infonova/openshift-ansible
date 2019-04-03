@@ -44,6 +44,7 @@
     - hostvars[item]['public_v4'] is not none
     - hostvars[item]['public_v4'] | string
   delay: 1
+  delegate_to: "{{ openshift_openstack_bastion_floating_ip }}"
 
 - name: Add public wildcard record
   nsupdate:
@@ -67,7 +68,7 @@
     - openshift_openstack_public_router_ip is defined
     - openshift_openstack_public_router_ip is not none
     - openshift_openstack_public_router_ip | string
-
+  delegate_to: "{{ openshift_openstack_bastion_floating_ip }}"
 
 - name: Add public API record
   nsupdate:
@@ -91,3 +92,4 @@
     - openshift_openstack_public_api_ip is defined
     - openshift_openstack_public_api_ip is not none
     - openshift_openstack_public_api_ip | string
+  delegate_to: "{{ openshift_openstack_bastion_floating_ip }}"
