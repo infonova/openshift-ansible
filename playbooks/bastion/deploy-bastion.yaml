@@ -7,6 +7,13 @@
 
   tasks:
 
+  - name: Upload Public Keys to OS
+    os_keypair:
+      state: present
+      name: "{{ openshift_openstack_keypair_name }}"
+      public_key_file: "{{ openshift_openstack_keypair_keys_file }}"
+
+
   - name: Create OS Network
     os_network:
       name: "{{ openshift_openstack_provider_network_name }}"
@@ -16,6 +23,8 @@
       network_name: "{{ openshift_openstack_provider_network_name }}"
       name: "{{ openshift_openstack_node_subnet_name }}"
       cidr: "{{ openshift_openstack_subnet_cidr }}"
+      allocation_pool_start: "{{openshift_openstack_pool_start}}"
+      allocation_pool_end: "{{openshift_openstack_pool_end}}"
       dns_nameservers:
          "{{ openshift_openstack_dns_forwarders }}"
 
@@ -34,9 +43,32 @@
         - ip_address: "{{ openshift_openstack_bastion_ip }}"
     register: bastion_port
 
+  - name: Create SG for Jumphost
+    os_security_group:
+      state: present
+      name: bastion-sg
+      description: Jumphost for Bearingpoint    
+
+  - name: Create SSH SG-Rule for Jumphost
+    os_security_group_rule:
+      security_group: bastion-sg
+      protocol: tcp
+      port_range_min: 22    
+      port_range_max: 22    
+      state: present
+      remote_ip_prefix: 0.0.0.0/0
+
+  - name: Create ping SG-Rule for Jumphost
+    os_security_group_rule:
+      security_group: bastion-sg
+      protocol: icmp
+      state: present
+      remote_ip_prefix: 0.0.0.0/0
+
   - name: Create bastion host
     os_server:
        name: "bastion"
+       security_groups: "bastion-sg"
        image: "{{ openshift_openstack_bastion_image_name }}"
        key_name: "{{ openshift_openstack_keypair_name }}"
        flavor: "{{ openshift_openstack_bastion_flavor }}"
@@ -51,7 +83,6 @@
                 name: {{ openshift_openstack_user }}
                 sudo: ["ALL=(ALL) NOPASSWD: ALL"]
 
-    
 
   - name: Add bastion host to inventory
     add_host:
@@ -69,6 +100,22 @@
   - name: Wait for bastion host
     wait_for_connection:
       timeout: 900
+
+  - name: insert yum proxy(http)
+    lineinfile: 
+      dest: /etc/yum.conf
+      state: present
+      regexp: "{{ http_proxy }}"
+      insertafter: EOF
+      line: "proxy={{ http_proxy }}"
+
+  - name: insert yum no-proxy
+    lineinfile: 
+      dest: /etc/yum.conf
+      state: present
+      regexp: "{{ no_proxy }}"
+      insertafter: EOF
+      line: "no_proxy={{ no_proxy }}"
 
   - name: install python DNS package 
     package: 
