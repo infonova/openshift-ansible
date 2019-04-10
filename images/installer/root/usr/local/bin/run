@@ -19,6 +19,9 @@ if [[ -v INVENTORY_FILE ]]; then
   # Make a copy so that ALLOW_ANSIBLE_CONNECTION_LOCAL below
   # does not attempt to modify the original
   cp ${INVENTORY_FILE} ${INVENTORY}
+elif [[ -v DYNAMIC_INVENTORY_FILE ]]; then
+  # do not copy the dynamic inventory (may have dependencies in folder)
+  INVENTORY="${DYNAMIC_INVENTORY_FILE}"
 elif [[ -v INVENTORY_DIR ]]; then
   INVENTORY="$(mktemp -d)"
   cp -RL ${INVENTORY_DIR}/* ${INVENTORY}
@@ -32,12 +35,12 @@ elif [[ -v GENERATE_INVENTORY ]]; then
   /usr/local/bin/generate ${INVENTORY}
 else
   echo
-  echo "One of INVENTORY_FILE, INVENTORY_DIR, INVENTORY_URL, GENERATE_INVENTORY, or DYNAMIC_SCRIPT_URL must be provided."
+  echo "One of INVENTORY_FILE, DYNAMIC_INVENTORY_FILE, INVENTORY_DIR, INVENTORY_URL, GENERATE_INVENTORY, or DYNAMIC_SCRIPT_URL must be provided."
   exec /usr/local/bin/usage
 fi
 INVENTORY_ARG="-i ${INVENTORY}"
 
-if [[ "$ALLOW_ANSIBLE_CONNECTION_LOCAL" = false ]]; then
+if [[ -z DYNAMIC_INVENTORY_FILE && "$ALLOW_ANSIBLE_CONNECTION_LOCAL" = false ]]; then
   sed -i s/ansible_connection=local// ${INVENTORY}
 fi
 
