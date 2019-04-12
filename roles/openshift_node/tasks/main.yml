@@ -48,6 +48,23 @@
     sysctl_file: "/etc/sysctl.d/99-openshift.conf"
     reload: yes
 
+# Even though we do not want to use the included ELK stack, we need to tune "max_map_count" for the
+# ELK stack which will be provided later on.
+- block:
+    - name: Checking vm max_map_count value
+      command:
+        cat /proc/sys/vm/max_map_count
+      register: _vm_max_map_count
+
+    - name: Updating vm.max_map_count value
+      sysctl:
+        name: vm.max_map_count
+        value: 262144
+        sysctl_file: "/etc/sysctl.d/99-openshift.conf"
+        reload: yes
+      when:
+      - _vm_max_map_count.stdout | default(0) | int < 262144 | int
+
 - import_tasks: selinux_container_cgroup.yml
 
 - import_tasks: registry_auth.yml
