@@ -68,7 +68,8 @@
   - name: Create bastion host
     os_server:
        name: "bastion"
-       security_groups: "bastion-sg"
+       security_groups:
+         - "bastion-sg"
        image: "{{ openshift_openstack_bastion_image_name }}"
        key_name: "{{ openshift_openstack_keypair_name }}"
        flavor: "{{ openshift_openstack_bastion_flavor }}"
