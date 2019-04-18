@@ -7,6 +7,14 @@ system_info:
     sudo: ["ALL=(ALL) NOPASSWD: ALL"]
 
 write_files:
+{% if openshift_custom_timeserver_config is defined %}
+  - path: {{ openshift_custom_timeserver_config.path }}
+    permissions: 0644
+    owner: root
+    content: |
+      {{ openshift_custom_timeserver_config.content }}
+{% endif %}
+
   - path: /etc/sudoers.d/00-openshift-no-requiretty
     permissions: 440
     content: |
@@ -32,6 +40,9 @@ write_files:
 {% endif %}
 
 runcmd:
+{% if openshift_custom_timeserver_config is defined %}
+  - systemctl restart chronyd
+{% endif %}
 {% if openshift_openstack_provision_user_commands %}
   - /root/ansible_install.sh
 {% endif %}
