@@ -12,7 +12,7 @@ write_files:
     permissions: 0644
     owner: root
     content: |
-      {{ openshift_custom_timeserver_config.content }}
+      {{ openshift_custom_timeserver_config.content | indent(width=6, indentfirst=False) }}
 {% endif %}
 
   - path: /etc/sudoers.d/00-openshift-no-requiretty
