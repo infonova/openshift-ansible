@@ -6,17 +6,24 @@
   gather_facts: no
   vars:
     stack_name: dns-service
-    domain_name: "{{ openshift_openstack_clusterid}}.{{ openshift_openstack_public_dns_domain }}"
+    domain_name: "{{ openshift_openstack_clusterid }}.{{ openshift_openstack_public_dns_domain }}"
     flavor: "{{ openshift_openstack_dns_flavor }}"
     image: "{{ openshift_openstack_dns_image_name }}"
     slave_count: 1
     external_network: "{{ openshift_openstack_external_network_name }}"
     ssh_user: "cloud" # todo: varible?
     slave_server_group_policies: ['anti-affinity']
-    dns_forwarders: "{{ openshift_openstack_dns_forwarders }}" 
+    dns_forwarders: "{{ openshift_openstack_dns_forwarders }}"
     update_key: "{{ openshift_openstack_external_nsupdate_keys['private']['key_secret'] }}"
     contact: admin@{{ domain_name }}
   tasks:
+
+  - name: Make sure to use DNS forwarders for initial setup
+    os_subnet:
+      name: "{{ openshift_openstack_node_subnet_name }}"
+      network_name: "{{ openshift_openstack_provider_network_name }}"
+      cidr: "{{ openshift_openstack_subnet_cidr }}"
+      dns_nameservers: "{{ dns_forwarders }}"
 
   - name: Check whether the stack exists already
     command: "openstack stack show {{ stack_name }}"
@@ -38,7 +45,7 @@
         slave_server_group_policies: "{{ slave_server_group_policies }}"
         service_network: "{{ openshift_openstack_provider_network_name }}"
         service_subnet: "{{ openshift_openstack_node_subnet_name }}"
-        master_ip: "{{ openshift_openstack_dns_master_ip }}" 
+        master_ip: "{{ openshift_openstack_dns_master_ip }}"
         slave_ip: "{{ openshift_openstack_dns_slave_ip }}"
     register: stack_output
     when: stack_check.rc != 0
@@ -94,14 +101,14 @@
 - import_playbook: ansible/bind-server.yml
 
 # Hack to change the DHCP DNS to the new DNS after their creation
-- name: Update Subnet DNS 
+- name: Update Subnet DNS
   hosts: localhost
-  tasks: 
+  tasks:
   - name: Update Subnet DNS
     os_subnet:
       name: "{{ openshift_openstack_node_subnet_name }}"
       network_name: "{{ openshift_openstack_provider_network_name }}"
-      cidr: "{{ openshift_openstack_subnet_cidr  }}"
+      cidr: "{{ openshift_openstack_subnet_cidr }}"
       dns_nameservers:
        - "{{ openshift_openstack_dns_master_ip }}"
        - "{{ openshift_openstack_dns_slave_ip }}"
