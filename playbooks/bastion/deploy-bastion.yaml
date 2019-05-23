@@ -20,6 +20,7 @@
          "{{ openshift_openstack_dns_forwarders }}"
 
   - name: Create OS Router
+    # Why does this error when router is already present?
     ignore_errors: yes
     os_router:
       name: os-router
@@ -51,7 +52,6 @@
                 name: {{ openshift_openstack_user }}
                 sudo: ["ALL=(ALL) NOPASSWD: ALL"]
 
-    
 
   - name: Add bastion host to inventory
     add_host:

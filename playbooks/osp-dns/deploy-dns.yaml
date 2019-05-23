@@ -78,13 +78,12 @@
       ansible_user: "{{ ssh_user }}"
     with_items: "{{ stack_output.slaves }}"
 
-
   - name: Wait for the deployed servers
     wait_for:
       host: "{{ item }}"
       port: 22
     with_items: "{{ groups['all'] }}"
-    delegate_to: "{{ openshift_openstack_bastion_ip }}"
+    delegate_to: "{{ openshift_openstack_bastion_floating_ip }}"
 
   - name: Verify the servers can be SSHd into
     wait_for_connection:

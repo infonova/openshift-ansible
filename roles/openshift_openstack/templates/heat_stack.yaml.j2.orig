@@ -801,7 +801,6 @@ resources:
 {% if openshift_openstack_provider_network_name %}
           net:         {{ openshift_openstack_provider_network_name }}
           net_name:         {{ openshift_openstack_provider_network_name }}
-          subnet:     {{ openshift_openstack_node_subnet_name }}
 {% else %}
 {% if openshift_openstack_node_network_id|default(false) %}
           net:         {{ openshift_openstack_node_network_id }}
@@ -896,7 +895,6 @@ resources:
 {% if openshift_openstack_provider_network_name %}
           net:         {{ openshift_openstack_provider_network_name }}
           net_name:         {{ openshift_openstack_provider_network_name }}
-          subnet:      {{ openshift_openstack_node_subnet_name  }}
 {% else %}
 {% if openshift_openstack_node_network_id|default(false) %}
           net:         {{ openshift_openstack_node_network_id }}
@@ -978,7 +976,6 @@ resources:
 {% if openshift_openstack_provider_network_name %}
           net:         {{ openshift_openstack_provider_network_name }}
           net_name:         {{ openshift_openstack_provider_network_name }}
-          subnet:      {{ openshift_openstack_node_subnet_name }}
 {% else %}
 {% if openshift_openstack_node_network_id|default(false) %}
           net:         {{ openshift_openstack_node_network_id }}

@@ -1,0 +1,14 @@
+---
+- name: Install rngd
+  hosts: all
+  tasks:
+  - name: Install rngd package
+    package:
+      name: rng-tools
+      state: present
+
+  - name: Start rngd
+    systemd:
+      name: rngd
+      state: started
+      enabled: yes
