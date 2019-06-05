@@ -3,12 +3,12 @@
 - hosts: bind
   become: true
   gather_facts: false
-  
+
   vars:
 
   tasks:
 
-     - name: firewall daemon
+    - name: firewall daemon
       package:
         name: firewalld
         state: installed
