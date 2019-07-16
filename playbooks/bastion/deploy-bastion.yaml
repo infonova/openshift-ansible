@@ -109,6 +109,7 @@
       regexp: "{{ http_proxy }}"
       insertafter: EOF
       line: "proxy={{ http_proxy }}"
+    when: http_proxy is defined
 
   - name: insert yum no-proxy
     lineinfile: 
@@ -117,6 +118,7 @@
       regexp: "{{ no_proxy }}"
       insertafter: EOF
       line: "no_proxy={{ no_proxy }}"
+    when: no_proxy is defined
 
   - name: install python DNS package 
     package: 
