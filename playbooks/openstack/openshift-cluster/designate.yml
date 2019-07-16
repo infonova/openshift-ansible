@@ -1,0 +1,41 @@
+---
+- name: Update designate
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  tasks:
+  - name: Get VM infos
+    os_server_facts:
+      server: "*.{{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}"
+
+  - name: create internal records of openshift hosts
+    command: openstack recordset create {{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}. {{ item.name }}. --type A --record {{ item.addresses[openshift_openstack_provider_network_name][0].addr }} --ttl 60
+    loop: "{{ openstack_servers }}"
+    register: create_cmd
+    failed_when: create_cmd.rc != 0 and create_cmd.stderr != 'Duplicate RecordSet'
+
+  - name: create record of API / UI Public IP
+    command: openstack recordset create {{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}. {{ openshift_master_cluster_public_hostname }}. --record {{ openshift_openstack_public_api_ip }} --type A --ttl 60
+    register: create_cmd
+    failed_when: create_cmd.rc != 0 and create_cmd.stderr != 'Duplicate RecordSet'
+    when: openshift_openstack_public_api_ip is defined
+
+  - name: create record of OpenShift Router Public IP
+    command: openstack recordset create {{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}. *.{{ openshift_master_default_subdomain }}.  --record {{ openshift_openstack_public_router_ip }} --type A --ttl 60
+    register: create_cmd
+    failed_when: create_cmd.rc != 0 and create_cmd.stderr != 'Duplicate RecordSet'
+    when: openshift_openstack_public_router_ip is defined
+
+
+
+  - name: Update internal records of openshift hosts
+    command: openstack recordset set {{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}. {{ item.name }}.  --record {{ item.addresses[openshift_openstack_provider_network_name][0].addr }} --ttl 60
+    loop: "{{ openstack_servers }}"
+
+  - name: Update record of API / UI Public IP
+    command: openstack recordset set {{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}. {{ openshift_master_cluster_public_hostname }}. --record {{ openshift_openstack_public_api_ip }} --ttl 60
+    when: openshift_openstack_public_api_ip is defined
+
+  - name: Update record of OpenShift Router Public IP
+    command: openstack recordset set {{ openshift_openstack_clusterid + '.' + openshift_openstack_public_dns_domain }}. *.{{ openshift_master_default_subdomain }}.  --record {{ openshift_openstack_public_router_ip }} --ttl 60
+    when: openshift_openstack_public_router_ip is defined
